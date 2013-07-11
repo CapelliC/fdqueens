@@ -5,10 +5,13 @@
 #-------------------------------------------------
 
 QT += core gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = fdqueens
 TEMPLATE = app
 
+# please, not obsolete compiler
+QMAKE_CXXFLAGS += -std=c++0x
 
 SOURCES += \
     main.cpp \
@@ -20,8 +23,15 @@ HEADERS += \
 FORMS += \
     dialog.ui
 
-CONFIG += link_pkgconfig
-PKGCONFIG += swipl
+windows {
+    SwiPl = "C:\Program Files\pl"
+    INCLUDEPATH += $$SwiPl\include
+    LIBS += -L$$SwiPl\bin -lswipl
+}
+unix {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += swipl
+}
 
 win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../pqConsole/release/ -lpqConsole
 else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../pqConsole/debug/ -lpqConsole
