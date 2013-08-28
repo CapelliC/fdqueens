@@ -63,7 +63,7 @@ PREDICATE(queen_paint, 3) {
 static QString file_to_string(QString res_file) {
     QFile file(res_file);
     if (!file.open(QFile::ReadOnly))
-        qFatal("cannot open res_file '%s'", res_file.toUtf8().constData());
+        {}//qFatal(QString("cannot open res_file '%1'").arg(res_file));
     return file.readAll();
 }
 
@@ -71,7 +71,7 @@ static void consult_resource_module(QString module) {
     QString script = file_to_string(QString(":/%1.pl").arg(module));
     QFile save(QString("%1.pl").arg(module));
     if (!save.open(QIODevice::WriteOnly))
-        qFatal("cannot write file '%s'", script.toUtf8().constData());
+        {}//qFatal(QString("cannot write file '%1'").arg(script));
     save.write(script.toUtf8());
     QString name = QFileInfo(save).absoluteFilePath();
     save.close();
