@@ -47,3 +47,10 @@ OTHER_FILES += \
 
 RESOURCES += \
     fdqueens.qrc
+
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../lqUty/release/ -llqUty
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../lqUty/debug/ -llqUty
+else:unix: LIBS += -L$$OUT_PWD/../lqUty/ -llqUty
+
+INCLUDEPATH += $$PWD/../lqUty
+DEPENDPATH += $$PWD/../lqUty
