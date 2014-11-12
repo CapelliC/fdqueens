@@ -30,9 +30,13 @@ Download loqt/pqUty and loqt/pqConsole (let's say, the [loqt](https://github.com
 in a folder at the same level of fdqueens.
 Using the [download zip] button provided by github, the resulting folder structure should be:
 
+~~~~
+
   +- fdqueens-master
   +- loqt-master
      +- lqUty
      +- pqConsole
+
+~~~~
 
 Then open fdqueens-master/fdqueens.pro with QtCreator, and build.
