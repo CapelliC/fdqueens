@@ -103,6 +103,7 @@ Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
             SLOT(query_result(QString,int)));//, Qt::DirectConnection);   // required to run in background thread
 
     enable_ui(false);
+    prepare_board();
 }
 
 void Dialog::enable_ui(bool running) {
@@ -143,8 +144,19 @@ void Dialog::on_Start_clicked()
 void Dialog::initialize()
 {
     consult_resource_module("fdqueens");
+    int N = prepare_board();
+
+    // start a background query, binding of attributed variables
+    //  will fire display events
+    ce->engine()->query_run(QString("fdqueens(%1)").arg(N));
+}
+
+int Dialog::prepare_board()
+{
+    // board size
     int N = ui->spinBox->value();
 
+    // allocate matrix of graphics
     chessboard = t_chessboard(N);
     for (int r = 0; r < N; ++r)
         chessboard[r] = QVector<QGraphicsItem*>(N);
@@ -152,7 +164,7 @@ void Dialog::initialize()
     QGraphicsView *w = ui->graphicsView;
     w->setScene(new QGraphicsScene);
 
-    QFont font("Times", 16);
+    QFont font("Times", 12);
     QFontMetrics fm(font);
     w->setFont(font);
     QPen P(Qt::black, 1);
@@ -169,9 +181,7 @@ void Dialog::initialize()
             i->setParentItem(chessboard[r][c]);
         }
 
-    // start a background query, binding of attributed variables
-    //  will fire display events
-    ce->engine()->query_run(QString("fdqueens(%1)").arg(N));
+    return N;
 }
 
 void Dialog::on_Stop_clicked()
@@ -219,4 +229,10 @@ void Dialog::query_exception(QString query, QString message)
     ce->exec_func([&]() {
         enable_ui(false);
     });
+}
+
+void Dialog::on_spinBox_valueChanged(int arg1)
+{
+    Q_UNUSED(arg1);
+    prepare_board();
 }

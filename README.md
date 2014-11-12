@@ -5,6 +5,10 @@ Running a GUI based on pqConsole - show solving N-Queens by means of CLP(FD).
 This is a port from Markus Triska CLP(FD) visualization sample.
 See [his page](http://www.logic.at/prolog/queens/queens.html) for the documentation.
 
+From Prolog viewpoint, the key is the use of [freeze](http://www.swi-prolog.org/pldoc/doc_for?object=freeze/2)/2
+to get a builtin called any time a constrained variables status change.
+See the extensive comment in [source code](http://www.logic.at/prolog/queens/queens.pl), section Animation.
+
 =======
 
 The specific Qt code shows how to interact with a Prolog program, instanced in background.

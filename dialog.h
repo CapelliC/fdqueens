@@ -61,10 +61,13 @@ private slots:
     void query_complete(QString query, int tot_occurrences);
     void query_exception(QString query, QString message);
 
+    void on_spinBox_valueChanged(int arg1);
+
 private:
 
     Ui::Dialog *ui;
     void initialize();
+    int prepare_board();
 
     typedef QVector< QVector<QGraphicsItem*> > t_chessboard;
     t_chessboard chessboard;
