@@ -48,8 +48,10 @@ signals:
 
 private slots:
     void on_Start_clicked();
+    void on_Step_clicked();
     void on_Stop_clicked();
     void on_Quit_clicked();
+    void on_Next_clicked();
 
     // run actual painting in UI thread
     void queen_paint_ui(long Q, long N, QString kind);
@@ -59,15 +61,15 @@ private slots:
     void query_complete(QString query, int tot_occurrences);
     void query_exception(QString query, QString message);
 
-    void on_Next_clicked();
-
 private:
+
     Ui::Dialog *ui;
+    void initialize();
 
     typedef QVector< QVector<QGraphicsItem*> > t_chessboard;
     t_chessboard chessboard;
 
-    bool stop_req;
+    enum { idle, step, running, more_sol, req_stop, finished } state;
     void enable_ui(bool running);
 
     QMutex sync;

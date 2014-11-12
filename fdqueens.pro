@@ -13,15 +13,10 @@ TEMPLATE = app
 # please, not obsolete compiler
 QMAKE_CXXFLAGS += -std=c++0x
 
-SOURCES += \
-    main.cpp \
-    dialog.cpp
-
-HEADERS += \
-    dialog.h
-
 FORMS += \
     dialog.ui
+
+DEFINES += PL_SAFE_ARG_MACROS
 
 windows {
     SwiPl = "C:\Program Files\pl"
@@ -33,14 +28,6 @@ unix {
     PKGCONFIG += swipl
 }
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../pqConsole/release/ -lpqConsole
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../pqConsole/debug/ -lpqConsole
-else:symbian: LIBS += -lpqConsole
-else:unix: LIBS += -L$$OUT_PWD/../pqConsole/ -lpqConsole
-
-INCLUDEPATH += $$PWD/../pqConsole
-DEPENDPATH += $$PWD/../pqConsole
-
 OTHER_FILES += \
     fdqueens.pl \
     README.md
@@ -48,9 +35,58 @@ OTHER_FILES += \
 RESOURCES += \
     fdqueens.qrc
 
-win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../lqUty/release/ -llqUty
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../lqUty/debug/ -llqUty
-else:unix: LIBS += -L$$OUT_PWD/../lqUty/ -llqUty
+# avoid full build of loqt components for this test
+# pqConsole component source included
+# lqUty component source included
 
-INCLUDEPATH += $$PWD/../lqUty
-DEPENDPATH += $$PWD/../lqUty
+DEFINES += PQCONSOLE_STATIC
+DEFINES += LQUTY_STATIC
+
+windows {
+    pqConsole = $$PWD/../loqt-master/pqConsole
+}
+unix {
+    pqConsole = $$PWD/../pqConsole
+}
+INCLUDEPATH += $$pqConsole
+DEPENDPATH += $$pqConsole
+
+windows {
+    lqUty = $$PWD/../loqt-master/lqUty
+}
+unix {
+    lqUty = $$PWD/../lqUty
+}
+INCLUDEPATH += $$lqUty
+DEPENDPATH += $$lqUty
+
+SOURCES += \
+    main.cpp \
+    dialog.cpp \
+    $$pqConsole/pqConsole.cpp \
+    $$pqConsole/pqMainWindow.cpp \
+    $$pqConsole/pqMiniSyntax.cpp \
+    $$pqConsole/SwiPrologEngine.cpp \
+    $$pqConsole/Swipl_IO.cpp \
+    $$pqConsole/Completion.cpp \
+    $$pqConsole/ConsoleEdit.cpp \
+    $$pqConsole/reflexive.cpp \
+    $$pqConsole/FlushOutputEvents.cpp \
+    $$pqConsole/Preferences.cpp \
+    $$lqUty/lqUty.cpp \
+    $$lqUty/ParenMatching.cpp
+
+HEADERS += \
+    dialog.h \
+    $$pqConsole/pqConsole.h \
+    $$pqConsole/pqMainWindow.h \
+    $$pqConsole/pqMiniSyntax.h \
+    $$pqConsole/SwiPrologEngine.h \
+    $$pqConsole/Swipl_IO.h \
+    $$pqConsole/Completion.h \
+    $$pqConsole/ConsoleEdit.h \
+    $$pqConsole/reflexive.h \
+    $$pqConsole/FlushOutputEvents.h \
+    $$pqConsole/Preferences.h \
+    $$lqUty/lqUty.h \
+    $$lqUty/ParenMatching.h

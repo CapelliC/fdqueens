@@ -32,11 +32,10 @@
 #include "ConsoleEdit.h"
 
 static Dialog *dia;
-
 static ConsoleEdit *ce;
 
 void Dialog::queen_paint_ui(long Q, long N, QString kind) {
-    QGraphicsSimpleTextItem *i = dynamic_cast<QGraphicsSimpleTextItem *>(chessboard[Q-1][N-1]->childItems().at(0));
+    auto i = dynamic_cast<QGraphicsSimpleTextItem *>(chessboard[Q-1][N-1]->childItems().at(0));
     if (kind == "place") {
         i->setText("Q");
         i->setBrush(Qt::blue);
@@ -50,20 +49,20 @@ void Dialog::queen_paint_ui(long Q, long N, QString kind) {
 }
 
 void Dialog::queen_paint(long Q, long N, QString kind) {
-    if (stop_req)
+    if (state == req_stop)
         throw PlException(PlAtom("stop_req"));
     emit queen_paint_sig(Q, N, kind);
 }
 
 PREDICATE(queen_paint, 3) {
-    dia->queen_paint((long)A1, (long)A2, S(A3));
+    dia->queen_paint((long)PL_A1, (long)PL_A2, S(PL_A3));
     return TRUE;
 }
 
 static QString file_to_string(QString res_file) {
     QFile file(res_file);
     if (!file.open(QFile::ReadOnly))
-        {}//qFatal(QString("cannot open res_file '%1'").arg(res_file));
+        qFatal("cannot open res_file %s", qPrintable(res_file));
     return file.readAll();
 }
 
@@ -71,12 +70,12 @@ static void consult_resource_module(QString module) {
     QString script = file_to_string(QString(":/%1.pl").arg(module));
     QFile save(QString("%1.pl").arg(module));
     if (!save.open(QIODevice::WriteOnly))
-        {}//qFatal(QString("cannot write file '%1'").arg(script));
+        qFatal("cannot write file %s", qPrintable(script));
     save.write(script.toUtf8());
     QString name = QFileInfo(save).absoluteFilePath();
     save.close();
 
-    //ce->command(QString("consult('%1').\n").arg(name));
+    // load the Prolog script
     ce->engine()->query_run(QString("consult('%1')").arg(name));
 }
 
@@ -85,6 +84,7 @@ Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
     ui(new Ui::Dialog)
 {
     ui->setupUi(dia = this);
+    state = idle;
 
     // attach SWI-Prolog background running engine to text editor
     QWidget *y = ui->tabWidget->widget(1);
@@ -92,15 +92,15 @@ Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
     y->layout()->addWidget(ce = new ConsoleEdit(argc, argv));
 
     connect(this, SIGNAL(queen_paint_sig(long,long,QString)),
-            this, SLOT(queen_paint_ui(long,long,QString)));
+            SLOT(queen_paint_ui(long,long,QString)));
 
     connect(ce->engine(), SIGNAL(query_complete(QString,int)),
-            this, SLOT(query_complete(QString,int)));
+            SLOT(query_complete(QString,int)));
     connect(ce->engine(), SIGNAL(query_exception(QString,QString)),
-            this, SLOT(query_exception(QString,QString)));
+            SLOT(query_exception(QString,QString)));
 
     connect(ce->engine(), SIGNAL(query_result(QString,int)),
-            this, SLOT(query_result(QString,int)), Qt::DirectConnection);   // required to run in background thread
+            SLOT(query_result(QString,int)));//, Qt::DirectConnection);   // required to run in background thread
 
     enable_ui(false);
 }
@@ -108,6 +108,7 @@ Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
 void Dialog::enable_ui(bool running) {
     ui->spinBox->setEnabled(!running);
     ui->Start->setEnabled(!running);
+    ui->Step->setEnabled(!running);
     ui->Stop->setEnabled(running);
     ui->Next->setEnabled(false);
     ui->Quit->setEnabled(!running);
@@ -118,7 +119,28 @@ Dialog::~Dialog()
     delete ui;
 }
 
+void Dialog::on_Step_clicked()
+{
+    switch (state) {
+    case idle:
+        initialize();
+        break;
+    case req_stop:
+        break;
+    default:
+        Q_ASSERT(false);
+    }
+}
+
 void Dialog::on_Start_clicked()
+{
+    Q_ASSERT(state == idle);
+    initialize();
+    enable_ui(true);
+    state = running;
+}
+
+void Dialog::initialize()
 {
     consult_resource_module("fdqueens");
     int N = ui->spinBox->value();
@@ -147,36 +169,38 @@ void Dialog::on_Start_clicked()
             i->setParentItem(chessboard[r][c]);
         }
 
-    enable_ui(true);
-    stop_req = false;
-    //ce->command(QString("fdqueens(%1).\n").arg(N));
+    // start a background query, binding of attributed variables
+    //  will fire display events
     ce->engine()->query_run(QString("fdqueens(%1)").arg(N));
 }
 
 void Dialog::on_Stop_clicked()
 {
-    stop_req = true;
-    ready.wakeOne();
+    //stop_req = true;
+    //ready.wakeOne();
 }
 
 void Dialog::on_Quit_clicked()
 {
-    stop_req = true;
+    //stop_req = true;
     close();
 }
 
 void Dialog::on_Next_clicked()
 {
     ui->Next->setEnabled(false);
-    ready.wakeOne();
+    //ready.wakeOne();
 }
 
+// this gets called from background thread: needs to syncronize
 void Dialog::query_result(QString query, int occurrence)
 {
     qDebug() << query << occurrence;
     if (query.left(8) == "fdqueens") {
-        ui->Next->setEnabled(true);
-        ready.wait(&sync);
+        ce->exec_func([&]() {
+            ui->Next->setEnabled(true);
+            //ready.wait(&sync);
+        });
     }
 }
 
@@ -184,11 +208,15 @@ void Dialog::query_complete(QString query, int tot_occurrences)
 {
     qDebug() << query << tot_occurrences;
     if (query.left(8) == "fdqueens")
-        enable_ui(false);
+        ce->exec_func([&]() {
+            enable_ui(false);
+        });
 }
 
 void Dialog::query_exception(QString query, QString message)
 {
     qDebug() << query << message;
-    enable_ui(false);
+    ce->exec_func([&]() {
+        enable_ui(false);
+    });
 }

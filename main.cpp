@@ -22,6 +22,7 @@
 
 #include <QApplication>
 #include "dialog.h"
+#include "pqApplication.h"
 
 int main(int argc, char *argv[])
 {

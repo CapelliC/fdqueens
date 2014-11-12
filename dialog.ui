@@ -47,7 +47,14 @@
         <number>20</number>
        </property>
        <property name="value">
-        <number>12</number>
+        <number>8</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="Step">
+       <property name="text">
+        <string>Step</string>
        </property>
       </widget>
      </item>
