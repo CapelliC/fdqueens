@@ -71,9 +71,6 @@ private:
 
     typedef QVector<QVector<QGraphicsItem*>> t_chessboard;
     t_chessboard chessboard;
-
-    ConsoleEdit *console = 0;
-    SwiPrologEngine *engine() const;
 };
 
 #endif // DIALOG_H

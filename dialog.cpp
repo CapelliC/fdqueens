@@ -58,6 +58,10 @@ static void disabled(QWidgetList l) {
     for (auto c : l)
         c->setEnabled(false);
 }
+static void on_off(QWidgetList on, QWidgetList off) {
+    enabled(on);
+    disabled(off);
+}
 
 Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
     QDialog(parent),
@@ -65,39 +69,29 @@ Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
 {
     ui->setupUi(this);
 
-    /*
-    auto guarded = [&](std::function<void()> f) {
-        try {
-            f();
-        }
-        catch(PlException &e) {
-            QMessageBox::critical(this, tr("Error"), t2w(e));
-        }
-    };*/
-
     // attach SWI-Prolog background running engine to text editor
     QWidget *y = ui->tabWidget->widget(1);
     y->setLayout(new QVBoxLayout);
-    y->layout()->addWidget(console = new ConsoleEdit(argc, argv));
+    y->layout()->addWidget(new ConsoleEdit(argc, argv));
 
     // when board size change, prepare graphics
     connect(ui->chessboardSize, (void(QSpinBox::*)(int))&QSpinBox::valueChanged, [&](int) { prepare_board(); });
     prepare_board();
 
     // keep user interface state aligned
-    enabled ({ ui->Start });
-    disabled({ ui->Stop, ui->Next, ui->Step });
+    on_off({ ui->Start }, { ui->Stop, ui->Next });
 
     #define CLICK &QPushButton::clicked
     connect(ui->Quit, CLICK, qApp, &QApplication::quit);
 
     connect(ui->Start, CLICK, [&]() {
-        disabled({ ui->Start });
-        enabled ({ ui->Stop });
+        on_off({ ui->Stop }, { ui->Start });
         connect(ui->Stop, CLICK, []() { throw PlException("stop"); });
+
         SwiPrologEngine::in_thread it;
         it.resource_module("fdqueens", ":");
         try {
+            // run all queries
             for (fdqueens q(this, long(ui->chessboardSize->value())); q; ) {
                 QEventLoop l;
                 enabled({ ui->Next });
@@ -109,16 +103,16 @@ Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
         catch(PlException &e) {
             qDebug() << S(e);
         }
+
+        on_off({ ui->Start }, { ui->Stop, ui->Next });
     });
 }
 
-Dialog::~Dialog()
-{
+Dialog::~Dialog() {
     delete ui;
 }
 
-int Dialog::prepare_board()
-{
+int Dialog::prepare_board() {
     // board size
     int N = ui->chessboardSize->value();
 
@@ -162,7 +156,6 @@ void Dialog::queen_paint(long Q, long N, QString kind) {
         Q_ASSERT(kind == "clear");
         i->setText(" ");
     }
-    do_events(ui->delayPaint->value());
+    if (auto delay = ui->delayPaint->value())
+        do_events(delay);
 }
-
-//SwiPrologEngine *Dialog::engine() const { return console->engine(); }

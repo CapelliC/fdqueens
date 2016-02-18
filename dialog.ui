@@ -68,31 +68,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="Step">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
+      <widget class="QSpinBox" name="delayPaint">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Run a step of the solution&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-       </property>
-       <property name="text">
-        <string>Step</string>
-       </property>
-       <property name="checkable">
-        <bool>false</bool>
-       </property>
-       <property name="autoDefault">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="Stop">
-       <property name="text">
-        <string>Stop</string>
-       </property>
-       <property name="autoDefault">
-        <bool>false</bool>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;set the &amp;lt;b&amp;gt;delay&amp;lt;/b&amp;gt; between successive cell visualization&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
       </widget>
      </item>
@@ -107,9 +85,12 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="delayPaint">
-       <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;set the &amp;lt;b&amp;gt;delay&amp;lt;/b&amp;gt; between successive cell visualization&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <widget class="QPushButton" name="Stop">
+       <property name="text">
+        <string>Stop</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -128,6 +109,16 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>graphicsView</tabstop>
+  <tabstop>chessboardSize</tabstop>
+  <tabstop>Start</tabstop>
+  <tabstop>delayPaint</tabstop>
+  <tabstop>Next</tabstop>
+  <tabstop>Stop</tabstop>
+  <tabstop>Quit</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
