@@ -1,9 +1,9 @@
 /*
-    pqConsole    : interfacing SWI-Prolog and Qt
+    fdqueens     : visualizing SWI-Prolog attributed variables in Qt
 
     Author       : Carlo Capelli
     E-mail       : cc.carlo.cap@gmail.com
-    Copyright (C): 2013, Carlo Capelli
+    Copyright (C): 2013,2014,2015,2016
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -26,57 +26,54 @@
 #include <QDialog>
 #include <QVector>
 #include <QGraphicsItem>
-#include <QMutex>
-#include <QWaitCondition>
 
 namespace Ui {
 class Dialog;
 }
 
+class ConsoleEdit;
+class SwiPrologEngine;
+
+/**
+ * @brief The Dialog class
+ *
+ *  Illustrate how to run a dialog interacting with background Prolog processor.
+ *  User control parameters and execution, and CLP(FD), solving a popular N-Queens puzzle,
+ *  issues display updates. Kind of reactive programming.
+ *  The GUI object is apssed around as pointer.
+ */
 class Dialog : public QDialog
 {
     Q_OBJECT
-    
+
 public:
     explicit Dialog(int argc, char *argv[], QWidget *parent = 0);
     ~Dialog();
 
+    /**
+     * @brief queen_paint
+     *  when CLP(FD) changes the state of a variable, callback this
+     * @param Q
+     *  queen id
+     * @param N
+     *  row number
+     * @param kind
+     *  3 actions: place, gray (i.e. forbid), clear (i.e. unknown)
+     */
     void queen_paint(long Q, long N, QString kind);
-
-signals:
-    void queen_paint_sig(long Q, long N, QString kind);
-
-private slots:
-    void on_Start_clicked();
-    void on_Step_clicked();
-    void on_Stop_clicked();
-    void on_Quit_clicked();
-    void on_Next_clicked();
-
-    // run actual painting in UI thread
-    void queen_paint_ui(long Q, long N, QString kind);
-
-    // background query execution signals
-    void query_result(QString query, int occurrence);
-    void query_complete(QString query, int tot_occurrences);
-    void query_exception(QString query, QString message);
-
-    void on_spinBox_valueChanged(int arg1);
 
 private:
 
     Ui::Dialog *ui;
+
     void initialize();
     int prepare_board();
 
-    typedef QVector< QVector<QGraphicsItem*> > t_chessboard;
+    typedef QVector<QVector<QGraphicsItem*>> t_chessboard;
     t_chessboard chessboard;
 
-    enum { idle, step, running, more_sol, req_stop, finished } state;
-    void enable_ui(bool running);
-
-    QMutex sync;
-    QWaitCondition ready;
+    ConsoleEdit *console = 0;
+    SwiPrologEngine *engine() const;
 };
 
 #endif // DIALOG_H

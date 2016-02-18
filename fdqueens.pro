@@ -1,17 +1,25 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2013-04-26T13:39:29
-#
-#-------------------------------------------------
+#--------------------------------------------------
+# fdqueens.pro: project file
+#  visualizing SWI-Prolog attributed variables in Qt
+#  N-queens solved with CLP(FD)
+#--------------------------------------------------
+# Author        : Carlo Capelli
+# Copyright (C): 2013,2014,2015,2016
 
-QT += core gui
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += core gui widgets
 
 TARGET = fdqueens
 TEMPLATE = app
 
-# please, not obsolete compiler
-QMAKE_CXXFLAGS += -std=c++0x
+CONFIG += C++11
+
+SOURCES += \
+    main.cpp \
+    dialog.cpp
+
+HEADERS += \
+    dialog.h \
+    engine_hsm.h
 
 FORMS += \
     dialog.ui
@@ -51,6 +59,13 @@ unix {
 INCLUDEPATH += $$pqConsole
 DEPENDPATH += $$pqConsole
 
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../pqConsole/release/ -lpqConsole
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../pqConsole/debug/ -lpqConsole
+else:unix:!symbian: LIBS += -L$$OUT_PWD/../pqConsole/ -lpqConsole
+
+INCLUDEPATH += $$PWD/../pqConsole
+DEPENDPATH += $$PWD/../pqConsole
+
 windows {
     lqUty = $$PWD/../loqt-master/lqUty
 }
@@ -60,33 +75,9 @@ unix {
 INCLUDEPATH += $$lqUty
 DEPENDPATH += $$lqUty
 
-SOURCES += \
-    main.cpp \
-    dialog.cpp \
-    $$pqConsole/pqConsole.cpp \
-    $$pqConsole/pqMainWindow.cpp \
-    $$pqConsole/pqMiniSyntax.cpp \
-    $$pqConsole/SwiPrologEngine.cpp \
-    $$pqConsole/Swipl_IO.cpp \
-    $$pqConsole/Completion.cpp \
-    $$pqConsole/ConsoleEdit.cpp \
-    $$pqConsole/reflexive.cpp \
-    $$pqConsole/FlushOutputEvents.cpp \
-    $$pqConsole/Preferences.cpp \
-    $$lqUty/lqUty.cpp \
-    $$lqUty/ParenMatching.cpp
+win32:CONFIG(release, debug|release): LIBS += -L$$OUT_PWD/../lqUty/release/ -llqUty
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$OUT_PWD/../lqUty/debug/ -llqUty
+else:unix:!symbian: LIBS += -L$$OUT_PWD/../lqUty/ -llqUty
 
-HEADERS += \
-    dialog.h \
-    $$pqConsole/pqConsole.h \
-    $$pqConsole/pqMainWindow.h \
-    $$pqConsole/pqMiniSyntax.h \
-    $$pqConsole/SwiPrologEngine.h \
-    $$pqConsole/Swipl_IO.h \
-    $$pqConsole/Completion.h \
-    $$pqConsole/ConsoleEdit.h \
-    $$pqConsole/reflexive.h \
-    $$pqConsole/FlushOutputEvents.h \
-    $$pqConsole/Preferences.h \
-    $$lqUty/lqUty.h \
-    $$lqUty/ParenMatching.h
+INCLUDEPATH += $$PWD/../lqUty
+DEPENDPATH += $$PWD/../lqUty

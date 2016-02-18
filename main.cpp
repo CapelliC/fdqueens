@@ -1,9 +1,9 @@
 /*
-    pqConsole    : interfacing SWI-Prolog and Qt
+    fdqueens     : visualizing SWI-Prolog attributed variables in Qt
 
     Author       : Carlo Capelli
     E-mail       : cc.carlo.cap@gmail.com
-    Copyright (C): 2013, Carlo Capelli
+    Copyright (C): 2013,2014,2015,2016
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,6 @@
 
 #include <QApplication>
 #include "dialog.h"
-#include "pqApplication.h"
 
 int main(int argc, char *argv[])
 {

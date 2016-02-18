@@ -1,9 +1,9 @@
 /*
-    pqConsole    : interfacing SWI-Prolog and Qt
+    fdqueens     : visualizing SWI-Prolog attributed variables in Qt
 
     Author       : Carlo Capelli
     E-mail       : cc.carlo.cap@gmail.com
-    Copyright (C): 2013, Carlo Capelli
+    Copyright (C): 2013,2014,2015,2016
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
            : time a FD var status change, by means of a frozen goal
 */
 
-:- module(fdqueens, [fdqueens/1]).
+:- module(fdqueens, [fdqueens/2]).
 :- use_module(library(clpfd)).
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -62,28 +62,30 @@ safe_queens([Q|Qs], Q0, D0) :-
    the queen. On backtracking, the field is cleared.
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-animate(Qs) :- animate(Qs, Qs, 1).
+animate(Dia, Qs) :- animate(Dia, Qs, Qs, 1).
 
-animate([], _, _).
-animate([_|Rest], Qs, N) :-
-        animate_(Qs, 1, N),
+animate(_, [], _, _).
+animate(Dia, [_|Rest], Qs, N) :-
+        animate_(Dia, Qs, 1, N),
         N1 #= N + 1,
-        animate(Rest, Qs, N1).
+        animate(Dia, Rest, Qs, N1).
 
-animate_([], _, _).
-animate_([Q|Qs], C, N) :-
-        freeze(B, queen_value_truth(C,N,B)),
+animate_(_, [], _, _).
+animate_(Dia, [Q|Qs], C, N) :-
+        freeze(B, queen_value_truth(Dia, C,N,B)),
         Q #= N #<==> B,
         C1 #= C + 1,
-        animate_(Qs, C1, N).
+        animate_(Dia, Qs, C1, N).
 
 % queen_paint could actually be queen_value_truth, moving that logic inside
 
-queen_value_truth(Q, N, 1) :- queen_paint(Q, N, place).
-queen_value_truth(Q, N, 0) :- queen_paint(Q, N, gray).
-queen_value_truth(Q, N, _) :- queen_paint(Q, N, clear), fail.
+queen_value_truth(Dia, Q, N, 1) :- queen_paint(Dia, Q, N, place).
+queen_value_truth(Dia, Q, N, 0) :- queen_paint(Dia, Q, N, gray).
+queen_value_truth(Dia, Q, N, _) :- queen_paint(Dia, Q, N, clear), fail.
 
-fdqueens(N) :-
+fdqueens(Dia, N) :-
         N #> 0,
         n_queens(N, Qs),
-        animate(Qs), label(Qs).
+        animate(Dia, Qs),
+        label(Qs),
+        writeln('Solution'(Qs)).

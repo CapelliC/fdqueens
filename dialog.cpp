@@ -1,9 +1,9 @@
 /*
-    pqConsole    : interfacing SWI-Prolog and Qt
+    fdqueens     : visualizing SWI-Prolog attributed variables in Qt
 
     Author       : Carlo Capelli
     E-mail       : cc.carlo.cap@gmail.com
-    Copyright (C): 2013, Carlo Capelli
+    Copyright (C): 2013,2014,2015,2016
 
     This library is free software; you can redistribute it and/or
     modify it under the terms of the GNU Lesser General Public
@@ -22,97 +22,94 @@
 
 #include "dialog.h"
 #include "ui_dialog.h"
-#include <QFile>
+
 #include <QDebug>
-#include <QFileInfo>
+#include <QMessageBox>
 #include <QGraphicsView>
 #include <QGraphicsSimpleTextItem>
 
+#include "do_events.h"
 #include "PREDICATE.h"
+#include "pqConsole.h"
 #include "ConsoleEdit.h"
 
-static Dialog *dia;
-static ConsoleEdit *ce;
+/** declare Prolog side entry point
+ *  that is, loaded script declares a predicate fdqueens/2
+ */
+query2(fdqueens)
 
-void Dialog::queen_paint_ui(long Q, long N, QString kind) {
-    auto i = dynamic_cast<QGraphicsSimpleTextItem *>(chessboard[Q-1][N-1]->childItems().at(0));
-    if (kind == "place") {
-        i->setText("Q");
-        i->setBrush(Qt::blue);
-    } else if (kind == "gray") {
-        i->setText("X");
-        i->setBrush(Qt::red);
-    } else {
-        Q_ASSERT(kind == "clear");
-        i->setText(" ");
-    }
-}
-
-void Dialog::queen_paint(long Q, long N, QString kind) {
-    if (state == req_stop)
-        throw PlException(PlAtom("stop_req"));
-    emit queen_paint_sig(Q, N, kind);
-}
-
-PREDICATE(queen_paint, 3) {
-    dia->queen_paint((long)PL_A1, (long)PL_A2, S(PL_A3));
+/**
+ * @brief PREDICATE queen_paint(Dia, Q, N, Kind)
+ *  callback from Prolog: after an attributed variable state change
+ *  here it represents a placing/removing of a queen at specific position
+ */
+PREDICATE(queen_paint, 4) {
+    pqConsole::gui_run([&] {
+        pq_cast<Dialog>(PL_A1)->queen_paint(PL_A2, PL_A3, S(PL_A4));
+    });
     return TRUE;
 }
 
-static QString file_to_string(QString res_file) {
-    QFile file(res_file);
-    if (!file.open(QFile::ReadOnly))
-        qFatal("cannot open res_file %s", qPrintable(res_file));
-    return file.readAll();
+static void enabled(QWidgetList l) {
+    for (auto c : l)
+        c->setEnabled(true);
 }
-
-static void consult_resource_module(QString module) {
-    QString script = file_to_string(QString(":/%1.pl").arg(module));
-    QFile save(QString("%1.pl").arg(module));
-    if (!save.open(QIODevice::WriteOnly))
-        qFatal("cannot write file %s", qPrintable(script));
-    save.write(script.toUtf8());
-    QString name = QFileInfo(save).absoluteFilePath();
-    save.close();
-
-    // load the Prolog script
-    ce->engine()->query_run(QString("consult('%1')").arg(name));
+static void disabled(QWidgetList l) {
+    for (auto c : l)
+        c->setEnabled(false);
 }
 
 Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
     QDialog(parent),
     ui(new Ui::Dialog)
 {
-    ui->setupUi(dia = this);
-    state = idle;
+    ui->setupUi(this);
+
+    /*
+    auto guarded = [&](std::function<void()> f) {
+        try {
+            f();
+        }
+        catch(PlException &e) {
+            QMessageBox::critical(this, tr("Error"), t2w(e));
+        }
+    };*/
 
     // attach SWI-Prolog background running engine to text editor
     QWidget *y = ui->tabWidget->widget(1);
     y->setLayout(new QVBoxLayout);
-    y->layout()->addWidget(ce = new ConsoleEdit(argc, argv));
+    y->layout()->addWidget(console = new ConsoleEdit(argc, argv));
 
-    connect(this, SIGNAL(queen_paint_sig(long,long,QString)),
-            SLOT(queen_paint_ui(long,long,QString)));
-
-    connect(ce->engine(), SIGNAL(query_complete(QString,int)),
-            SLOT(query_complete(QString,int)));
-    connect(ce->engine(), SIGNAL(query_exception(QString,QString)),
-            SLOT(query_exception(QString,QString)));
-
-    connect(ce->engine(), SIGNAL(query_result(QString,int)),
-            SLOT(query_result(QString,int)));//, Qt::DirectConnection);   // required to run in background thread
-
-    enable_ui(false);
+    // when board size change, prepare graphics
+    connect(ui->chessboardSize, (void(QSpinBox::*)(int))&QSpinBox::valueChanged, [&](int) { prepare_board(); });
     prepare_board();
-}
 
-void Dialog::enable_ui(bool running) {
-    ui->spinBox->setEnabled(!running);
-    ui->Start->setEnabled(!running);
-    ui->Step->setEnabled(!running);
-    ui->Stop->setEnabled(running);
-    ui->Next->setEnabled(false);
-    ui->Quit->setEnabled(!running);
+    // keep user interface state aligned
+    enabled ({ ui->Start });
+    disabled({ ui->Stop, ui->Next, ui->Step });
+
+    #define CLICK &QPushButton::clicked
+    connect(ui->Quit, CLICK, qApp, &QApplication::quit);
+
+    connect(ui->Start, CLICK, [&]() {
+        disabled({ ui->Start });
+        enabled ({ ui->Stop });
+        connect(ui->Stop, CLICK, []() { throw PlException("stop"); });
+        SwiPrologEngine::in_thread it;
+        it.resource_module("fdqueens", ":");
+        try {
+            for (fdqueens q(this, long(ui->chessboardSize->value())); q; ) {
+                QEventLoop l;
+                enabled({ ui->Next });
+                connect(ui->Next, CLICK, &l, &QEventLoop::exit);
+                l.exec();
+                disabled({ ui->Next });
+            }
+        }
+        catch(PlException &e) {
+            qDebug() << S(e);
+        }
+    });
 }
 
 Dialog::~Dialog()
@@ -120,41 +117,10 @@ Dialog::~Dialog()
     delete ui;
 }
 
-void Dialog::on_Step_clicked()
-{
-    switch (state) {
-    case idle:
-        initialize();
-        break;
-    case req_stop:
-        break;
-    default:
-        Q_ASSERT(false);
-    }
-}
-
-void Dialog::on_Start_clicked()
-{
-    Q_ASSERT(state == idle);
-    initialize();
-    enable_ui(true);
-    state = running;
-}
-
-void Dialog::initialize()
-{
-    consult_resource_module("fdqueens");
-    int N = prepare_board();
-
-    // start a background query, binding of attributed variables
-    //  will fire display events
-    ce->engine()->query_run(QString("fdqueens(%1)").arg(N));
-}
-
 int Dialog::prepare_board()
 {
     // board size
-    int N = ui->spinBox->value();
+    int N = ui->chessboardSize->value();
 
     // allocate matrix of graphics
     chessboard = t_chessboard(N);
@@ -164,14 +130,14 @@ int Dialog::prepare_board()
     QGraphicsView *w = ui->graphicsView;
     w->setScene(new QGraphicsScene);
 
-    QFont font("Times", 12);
+    QFont font("Times", 14);
     QFontMetrics fm(font);
     w->setFont(font);
     QPen P(Qt::black, 1);
     QBrush B(Qt::gray), W(Qt::white);
 
     int p = fm.height(), d = p * 2;
-    QRect bb = fm.boundingRect("Q");
+    QRect bb = fm.boundingRect("M");
 
     for (int r = 0; r < N; ++r)
         for (int c = 0; c < N; ++c) {
@@ -184,55 +150,19 @@ int Dialog::prepare_board()
     return N;
 }
 
-void Dialog::on_Stop_clicked()
-{
-    //stop_req = true;
-    //ready.wakeOne();
-}
-
-void Dialog::on_Quit_clicked()
-{
-    //stop_req = true;
-    close();
-}
-
-void Dialog::on_Next_clicked()
-{
-    ui->Next->setEnabled(false);
-    //ready.wakeOne();
-}
-
-// this gets called from background thread: needs to syncronize
-void Dialog::query_result(QString query, int occurrence)
-{
-    qDebug() << query << occurrence;
-    if (query.left(8) == "fdqueens") {
-        ce->exec_func([&]() {
-            ui->Next->setEnabled(true);
-            //ready.wait(&sync);
-        });
+void Dialog::queen_paint(long Q, long N, QString kind) {
+    auto i = dynamic_cast<QGraphicsSimpleTextItem *>(chessboard[Q-1][N-1]->childItems().at(0));
+    if (kind == "place") {
+        i->setText(QChar(9819));
+        i->setBrush(Qt::blue);
+    } else if (kind == "gray") {
+        i->setText("X");
+        i->setBrush(Qt::red);
+    } else {
+        Q_ASSERT(kind == "clear");
+        i->setText(" ");
     }
+    do_events(ui->delayPaint->value());
 }
 
-void Dialog::query_complete(QString query, int tot_occurrences)
-{
-    qDebug() << query << tot_occurrences;
-    if (query.left(8) == "fdqueens")
-        ce->exec_func([&]() {
-            enable_ui(false);
-        });
-}
-
-void Dialog::query_exception(QString query, QString message)
-{
-    qDebug() << query << message;
-    ce->exec_func([&]() {
-        enable_ui(false);
-    });
-}
-
-void Dialog::on_spinBox_valueChanged(int arg1)
-{
-    Q_UNUSED(arg1);
-    prepare_board();
-}
+//SwiPrologEngine *Dialog::engine() const { return console->engine(); }
