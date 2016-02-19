@@ -32,6 +32,8 @@
 #include "PREDICATE.h"
 #include "pqConsole.h"
 #include "ConsoleEdit.h"
+#include "file2string.h"
+#include "pqMiniSyntax.h"
 
 /** declare Prolog side entry point
  *  that is, loaded script declares a predicate fdqueens/2
@@ -69,42 +71,53 @@ Dialog::Dialog(int argc, char *argv[], QWidget *parent) :
 {
     ui->setupUi(this);
 
-    // attach SWI-Prolog background running engine to text editor
-    QWidget *y = ui->tabWidget->widget(1);
-    y->setLayout(new QVBoxLayout);
-    y->layout()->addWidget(new ConsoleEdit(argc, argv));
+    // attach SWI-Prolog background running engine (will output into text editor)
+    ui->gridLayout_2->addWidget(new ConsoleEdit(argc, argv));
+
+    // detach the background processor to avoid a random GPF exiting the program
+    connect(qApp, &QApplication::aboutToQuit, []() { SwiPrologEngine::quit_request(); });
+
+    // show the code, from resource
+    ui->sourceEditor->setText(file2string(":/fdqueens.pl"));
+    new pqMiniSyntax(ui->sourceEditor);
 
     // when board size change, prepare graphics
     connect(ui->chessboardSize, (void(QSpinBox::*)(int))&QSpinBox::valueChanged, [&](int) { prepare_board(); });
     prepare_board();
 
     // keep user interface state aligned
-    on_off({ ui->Start }, { ui->Stop, ui->Next });
+    on_off({ ui->Start }, { ui->Complete, ui->Stop, ui->Next });
 
     #define CLICK &QPushButton::clicked
     connect(ui->Quit, CLICK, qApp, &QApplication::quit);
 
     connect(ui->Start, CLICK, [&]() {
-        on_off({ ui->Stop }, { ui->Start });
-        connect(ui->Stop, CLICK, []() { throw PlException("stop"); });
+        on_off({ ui->Stop, ui->Complete }, { ui->Start });
+
+        enum { wait, stop, complete } req = wait;
+
+        connect(ui->Stop, CLICK, [&]() { req = stop; });
+        connect(ui->Complete, CLICK, [&]() { req = complete; });
 
         SwiPrologEngine::in_thread it;
         it.resource_module("fdqueens", ":");
-        try {
-            // run all queries
-            for (fdqueens q(this, long(ui->chessboardSize->value())); q; ) {
-                QEventLoop l;
-                enabled({ ui->Next });
-                connect(ui->Next, CLICK, &l, &QEventLoop::exit);
-                l.exec();
-                disabled({ ui->Next });
-            }
-        }
-        catch(PlException &e) {
-            qDebug() << S(e);
+
+        // run all queries
+        for (fdqueens q(this, long(ui->chessboardSize->value())); q; ) {
+            if (req == complete)
+                continue;
+            QEventLoop l;
+            enabled({ ui->Next, ui->chessboardSize });
+            connect(ui->Next, CLICK, &l, &QEventLoop::exit);
+            connect(ui->Stop, CLICK, &l, &QEventLoop::exit);
+            connect(ui->Complete, CLICK, &l, &QEventLoop::exit);
+            l.exec();
+            disabled({ ui->Next, ui->chessboardSize });
+            if (req == stop)
+                break;
         }
 
-        on_off({ ui->Start }, { ui->Stop, ui->Next });
+        on_off({ ui->Start, ui->chessboardSize }, { ui->Stop, ui->Next, ui->Complete });
     });
 }
 

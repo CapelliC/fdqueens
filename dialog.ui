@@ -33,6 +33,37 @@
       <attribute name="title">
        <string>Console</string>
       </attribute>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <layout class="QVBoxLayout" name="verticalLayout_2"/>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_3">
+      <attribute name="title">
+       <string>Source</string>
+      </attribute>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QTextEdit" name="sourceEditor">
+         <property name="font">
+          <font>
+           <family>Monospace</family>
+           <pointsize>9</pointsize>
+          </font>
+         </property>
+         <property name="lineWrapMode">
+          <enum>QTextEdit::NoWrap</enum>
+         </property>
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+         <property name="acceptRichText">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
    </item>
@@ -41,7 +72,7 @@
      <item>
       <widget class="QSpinBox" name="chessboardSize">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;change the &amp;lt;b&amp;gt;dimension&amp;lt;/b&amp;gt; of the chessboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;change the &lt;b&gt;dimension&lt;/b&gt; of the chessboard&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="minimum">
         <number>4</number>
@@ -70,7 +101,10 @@
      <item>
       <widget class="QSpinBox" name="delayPaint">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;set the &amp;lt;b&amp;gt;delay&amp;lt;/b&amp;gt; between successive cell visualization&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;set the &lt;span style=&quot; font-weight:600;&quot;&gt;delay&lt;/span&gt; between successive cell visualization&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="maximum">
+        <number>999</number>
        </property>
       </widget>
      </item>
@@ -81,6 +115,16 @@
        </property>
        <property name="autoDefault">
         <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="Complete">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;run query to completion - &lt;span style=&quot; font-weight:600;&quot;&gt;all &lt;/span&gt;solutions&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string>Complete</string>
        </property>
       </widget>
      </item>
@@ -116,8 +160,10 @@
   <tabstop>Start</tabstop>
   <tabstop>delayPaint</tabstop>
   <tabstop>Next</tabstop>
+  <tabstop>Complete</tabstop>
   <tabstop>Stop</tabstop>
   <tabstop>Quit</tabstop>
+  <tabstop>sourceEditor</tabstop>
  </tabstops>
  <resources/>
  <connections/>
